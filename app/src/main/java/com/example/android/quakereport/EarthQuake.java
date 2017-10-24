@@ -8,13 +8,22 @@ public class EarthQuake {
 
     private String Magnitude;
     private String City;
-    private String Date;
+    private String Time;
+
+//    private int Time;
+//    private float Magnitude;
 
     public EarthQuake(String mag, String city, String date) {
         this.Magnitude = mag;
         this.City = city;
-        this.Date = date;
+        this.Time = date;
     }
+
+//    public EarthQuake(float mag, String city, int date) {
+//        this.Magnitude = mag;
+//        this.City = city;
+//        this.Time = date;
+//    }
 
     public String getMagnitude() {
         return Magnitude;
@@ -24,7 +33,7 @@ public class EarthQuake {
         return City;
     }
 
-    public String getDate() {
-        return Date;
+    public String getTime() {
+        return Time;
     }
 }
