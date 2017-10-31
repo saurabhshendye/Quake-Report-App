@@ -1,5 +1,7 @@
 package com.example.android.quakereport;
 
+import java.util.Date;
+
 /**
  * Created by Saurabh on 10/16/2017.
  */
@@ -8,15 +10,17 @@ public class EarthQuake {
 
     private String Magnitude;
     private String City;
-    private String Time;
+    private Date Time;
+    private String url;
 
 //    private int Time;
 //    private float Magnitude;
 
-    public EarthQuake(String mag, String city, String date) {
+    public EarthQuake(String mag, String city, Date date, String url) {
         this.Magnitude = mag;
         this.City = city;
         this.Time = date;
+        this.url = url;
     }
 
 //    public EarthQuake(float mag, String city, int date) {
@@ -33,7 +37,11 @@ public class EarthQuake {
         return City;
     }
 
-    public String getTime() {
+    public Date getTime() {
         return Time;
+    }
+
+    public String getUrl() {
+        return url;
     }
 }
