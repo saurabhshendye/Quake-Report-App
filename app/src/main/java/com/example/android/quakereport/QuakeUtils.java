@@ -1,11 +1,19 @@
 package com.example.android.quakereport;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -16,6 +24,8 @@ import java.util.Date;
  */
 
 public class QuakeUtils {
+
+    private static final String LOG_TAG = "Quake Utilities";
 
     private QuakeUtils() {
 
@@ -82,9 +92,126 @@ public class QuakeUtils {
         return earthquakes;
     }
 
+    public static ArrayList<EarthQuake> extractEarthquakes(String JSONResponse){
+        // Create an empty ArrayList that we can start adding earthquakes to
+        ArrayList<EarthQuake> earthquakes = new ArrayList<>();
+
+        // Try to parse the SAMPLE_JSON_RESPONSE. If there's a problem with the way the JSON
+        // is formatted, a JSONException exception object will be thrown.
+        // Catch the exception so the app doesn't crash, and print the error message to the logs.
+        try {
+            // build up a list of Earthquake objects with the corresponding data.
+            JSONObject root = new JSONObject(JSONResponse);
+            JSONObject metadata = root.getJSONObject("metadata");
+
+            int count = metadata.getInt("count");
+            JSONArray features = root.getJSONArray("features");
+            JSONObject featureObject;
+            String Magnitude;
+            String Place;
+            long unixTime;
+            Date dateObject;
+            double magDouble;
+            String url;
+
+            for (int i= 0; i < count; i++) {
+                featureObject = features.getJSONObject(i);
+
+                Place = featureObject.getJSONObject("properties").getString("place");
+
+                unixTime = featureObject.getJSONObject("properties").getLong("time");
+                dateObject = new Date(unixTime);
+
+                magDouble = featureObject.getJSONObject("properties").getDouble("mag");
+                Magnitude = getMagnitude(magDouble);
+
+                url = featureObject.getJSONObject("properties").getString("url");
+
+                earthquakes.add(new EarthQuake(Magnitude, Place, dateObject, url));
+            }
+
+
+        } catch (JSONException e) {
+            // If an error is thrown when executing any of the above statements in the "try" block,
+            // catch the exception here, so the app doesn't crash. Print a log message
+            // with the message from the exception.
+            Log.e("QueryUtils", "Problem parsing the earthquake JSON results", e);
+        }
+
+        // Return the list of earthquakes
+        return earthquakes;
+    }
+
     private static String getMagnitude(double mag) {
         DecimalFormat formatter = new DecimalFormat("0.0");
         String output = formatter.format(mag);
         return output;
     }
+
+    public static String makeHttpRequest(String strURL)  throws IOException{
+        String JSONResponse = "";
+
+        if (TextUtils.isEmpty(strURL)) {
+            return JSONResponse;
+        }
+
+        URL url = createURL(strURL);
+
+
+        HttpURLConnection urlConnection = null;
+        InputStream inputStream = null;
+        try {
+            urlConnection = (HttpURLConnection) url.openConnection();
+            urlConnection.setRequestMethod("GET");
+            urlConnection.setReadTimeout(10000);
+            urlConnection.setConnectTimeout(15000);
+            urlConnection.connect();
+
+            if (urlConnection.getResponseCode() == 200) {
+                inputStream = urlConnection.getInputStream();
+                JSONResponse = readFromStream(inputStream);
+            }
+        } catch (IOException e) {
+
+        }
+        finally {
+            if (urlConnection != null) {
+                urlConnection.disconnect();
+            }
+            if (inputStream != null) {
+                // function must handle java.io.IOException here
+                inputStream.close();
+            }
+        }
+        return JSONResponse;
+    }
+
+
+    private static String readFromStream(InputStream inputStream) throws IOException{
+        StringBuilder builder = new StringBuilder();
+        if (inputStream!=null) {
+            InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+            BufferedReader reader = new BufferedReader(inputStreamReader);
+
+            String line = reader.readLine();
+            while (line !=null) {
+                builder.append(line);
+                line = reader.readLine();
+            }
+        }
+        return builder.toString();
+    }
+
+    private static URL createURL(String strUrl) {
+        URL url = null;
+        try {
+            url = new URL(strUrl);
+        } catch (MalformedURLException e) {
+            Log.e(LOG_TAG, "Problem with url" + e);
+        }
+
+        return url;
+    }
+
 }
+
