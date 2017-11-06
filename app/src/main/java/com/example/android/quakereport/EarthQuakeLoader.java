@@ -32,9 +32,12 @@ public class EarthQuakeLoader extends AsyncTaskLoader<List<EarthQuake>> {
         String JSONString = "";
 
         try {
+            Thread.sleep(2000);
             JSONString = makeHttpRequest(USGS_REQUEST_URL);
         } catch (IOException e) {
 
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         // Create a list of earthquake locations.

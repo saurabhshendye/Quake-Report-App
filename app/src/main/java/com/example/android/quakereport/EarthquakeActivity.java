@@ -16,8 +16,11 @@
 package com.example.android.quakereport;
 
 
+import android.content.Context;
 import android.content.Intent;
 
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -28,6 +31,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 
 import java.io.IOException;
@@ -39,6 +44,10 @@ import static com.example.android.quakereport.QuakeUtils.makeHttpRequest;
 
 public class EarthquakeActivity extends AppCompatActivity implements
          android.app.LoaderManager.LoaderCallbacks<List<EarthQuake>> {
+
+    private TextView mEmptyStateTextView;
+
+    private ProgressBar progressBar;
 
     private EarthQuakeAdapter adapter;
 
@@ -53,35 +62,57 @@ public class EarthquakeActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.earthquake_activity);
 
-        // Initializing the loader
-        getLoaderManager().initLoader(0, null, this);
 
-        // Find a reference to the {@link ListView} in the layout
-        ListView earthquakeListView = (ListView) findViewById(R.id.list);
+        ConnectivityManager connectivityManager = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
 
-        // Create a new {@link ArrayAdapter} of earthquakes
-        adapter = new EarthQuakeAdapter(
-                this, new ArrayList<EarthQuake>());
+        NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
 
-        // Set the adapter on the {@link ListView}
-        // so the list can be populated in the user interface
-        earthquakeListView.setAdapter(adapter);
+        if (netInfo!=null && netInfo.isConnected()) {
+
+            // Initializing the loader
+            getLoaderManager().initLoader(0, null, this);
+
+            // Find a reference to the {@link ListView} in the layout
+            ListView earthquakeListView = (ListView) findViewById(R.id.list);
+
+            mEmptyStateTextView = (TextView) findViewById(R.id.emptyView);
+            earthquakeListView.setEmptyView(mEmptyStateTextView);
+
+            // Create a new {@link ArrayAdapter} of earthquakes
+            adapter = new EarthQuakeAdapter(
+                    this, new ArrayList<EarthQuake>());
+
+            // Set the adapter on the {@link ListView}
+            // so the list can be populated in the user interface
+            earthquakeListView.setAdapter(adapter);
 
 //        QuakeAsyncTask task = new QuakeAsyncTask();
 //        task.execute(USGS_REQUEST_URL);
 
 
-        earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id ) {
+            earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int position, long id ) {
 
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                String url = adapter.getItem(position).getUrl();
-                intent.setData(Uri.parse(url));
-                startActivity(intent);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    String url = adapter.getItem(position).getUrl();
+                    intent.setData(Uri.parse(url));
+                    startActivity(intent);
 
-            }
-        });
+                }
+            });
+        } else {
+            progressBar = (ProgressBar) findViewById(R.id.spinner);
+            progressBar.setVisibility(View.GONE);
+
+            mEmptyStateTextView = (TextView) findViewById(R.id.emptyView);
+            mEmptyStateTextView.setText(R.string.no_internet);
+
+        }
+
+
+
     }
 
     @Override
@@ -91,6 +122,12 @@ public class EarthquakeActivity extends AppCompatActivity implements
 
     @Override
     public void onLoadFinished(android.content.Loader<List<EarthQuake>> loader, List<EarthQuake> earthQuakes) {
+        // Set empty state text to display "No earthquakes found."
+        mEmptyStateTextView.setText(R.string.no_earthquakes);
+
+        progressBar = (ProgressBar) findViewById(R.id.spinner);
+        progressBar.setVisibility(View.GONE);
+
         adapter.clear();
 
         if (earthQuakes!=null && !earthQuakes.isEmpty()){
